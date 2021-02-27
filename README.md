@@ -74,3 +74,51 @@ func main() {
     r.Run(":8080")
 }
 ```
+
+## Build a Docker Image
+
+### Single stage docker build
+
+We can build a single-stage docker image using the `golang:alpine` image. Here’s the Dockerfile
+
+```bash
+FROM golang:alpine
+WORKDIR /app
+ADD . /app
+RUN cd /app && go build -o goapp
+ENTRYPOINT ./goapp
+```
+
+When we check the size using `docker images` we get about **408** MB, just for our single little Go binary. That's pretty big.
+
+### Multi stage docker build
+
+Now let’s try a multi-stage build using this new Dockerfile.
+
+```bash
+# build the app - builder image
+FROM golang:1.16.0-alpine3.13 AS builder
+RUN mkdir /build
+ADD *.go *.mod *.sum /build/
+WORKDIR /build
+RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux go build -a -o golang-app .
+
+# create clean app image
+FROM alpine:3.13
+COPY --from=builder /build/golang-app .
+ENTRYPOINT [ "./golang-app" ]
+```
+
+Let's check the size of the image.
+
+```bash
+% docker images | grep somnidev
+somnidev/go-kubernetes-api                       latest                                                  f5d04da81e8d   14 minutes ago   15MB
+```
+
+Now we get an image that is really small. Only **15MB**. Let's run it.
+
+```bash
+docker run --rm -p 8080:8080 somnidev/go-kubernetes-api
+```
