@@ -75,11 +75,29 @@ func main() {
 }
 ```
 
+Run the app.
+
+```bash
+go run main.go
+```
+
+Now, we can list all package dependencies.
+
+```bash
+go list -m all
+```
+
+We can also build an executable file.
+
+```bash
+go build
+```
+
 ## Build a Docker Image
 
 ### Single stage docker build
 
-We can build a single-stage docker image using the `golang:alpine` image. Here’s the Dockerfile
+We can build a single-stage docker image using the `golang:alpine` image. Here’s the Dockerfile.
 
 ```bash
 FROM golang:alpine
@@ -89,9 +107,19 @@ RUN cd /app && go build -o goapp
 ENTRYPOINT ./goapp
 ```
 
+Now we can build the docker image.
+
+```bash
+docker build -t somnidev/go-kubernetes-api:latest -t somnidev/go-kubernetes-api:0.1 -f Dockerfile .
+```
+
 When we check the size using `docker images` we get about **408** MB, just for our single little Go binary. That's pretty big.
 
 ### Multi stage docker build
+
+With multi-stage builds, you use multiple FROM statements in your Dockerfile. Each FROM instruction can use a different base, and each of them begins a new stage of the build. You can selectively copy artifacts from one stage to another, leaving behind everything you don’t want in the final image - see [Use multi-stage builds](https://docs.docker.com/develop/develop-images/multistage-build/).
+
+By default, the stages are not named, and you refer to them by their integer number, starting with 0 for the first FROM instruction. However, you can name your stages, by adding an `AS <NAME>` to the FROM instruction.
 
 Now let’s try a multi-stage build using this new Dockerfile.
 
@@ -122,3 +150,85 @@ Now we get an image that is really small. Only **15MB**. Let's run it.
 ```bash
 docker run --rm -p 8080:8080 somnidev/go-kubernetes-api
 ```
+
+## Creating a Deployment for Pods
+
+For our first deployment we create a file called `pods.yaml`for our Go app. It creates a Replicaset that brings up one pod.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-kubernetes
+  labels:
+    app: go-kubernetes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-kubernetes
+  template:
+    metadata:
+      labels:
+        app: go-kubernetes
+    spec:
+      containers:
+      - name: go-kubernetes
+        image: somnidev/go-kubernetes-api:0.1
+        ports:
+        - containerPort: 80
+```
+
+Before you begin, make sure your Kubernetes cluster is up and running.
+
+Create the Deployment by running the following command.
+
+```bash
+kubectl apply -f pods.yaml
+```
+
+Since our pod defined in the _template_ has the _label_ `app: go-kubernetes` we can list `-l` only pods with that label.
+
+```bash
+kubectl get pods -l app=go-kubernetes -o wide
+```
+
+Get a shell into the running container.
+
+```bash
+kubectl exec --stdin --tty shell-demo -- /bin/bash
+```
+
+Now we can delete the deployment with the following command.
+
+```bash
+kubectl delete -f pod.yaml
+```
+
+## Creating a Service
+
+Since you can't connect to Pods there is a concept called a _Kubernetes Service_. A _Kubernetes Service_ is an abstraction which defines a logical set of Pods running, whereby each Pod provides the same functionality.
+
+When created, each Service is assigned its own unique IP address, also called _clusterIP_. This address is tied to the lifespan of the Service, and will not change while the Service is alive.
+
+Pods can be configured to talk to the Service, and know that communication to the Service will be automatically load-balanced out to some pod that is a member of the Service.
+
+We create a new file `services.yaml` for our service definitions.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-kubernetes
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    nodePort: 30080
+  selector:
+    app: go-kubernetes
+  type: NodePort
+```
+
+We need a _type: NodePort_ to expose our Service to the outside of the cluster. Notice that the NodePort has to be greater than `30000`.
