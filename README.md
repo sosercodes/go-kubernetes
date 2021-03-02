@@ -232,3 +232,53 @@ spec:
 ```
 
 We need a _type: NodePort_ to expose our Service to the outside of the cluster. Notice that the NodePort has to be greater than `30000`.
+
+## Creating an Ingress
+
+Assuming you have Docker for Mac installed, follow the next steps to set up the Nginx Ingress Controller on your local Kubernetes cluster - and take a look at the [Installation Guide](https://kubernetes.github.io/ingress-nginx/deploy/#docker-for-mac) for the actual link.
+
+Run the following command to set up the NGINX Ingress.
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.44.0/deploy/static/provider/cloud/deploy.yaml
+```
+
+Verify the service was enabled by running the following:
+
+```bash
+kubectl get pods -n ingress-nginx
+```
+
+Or use the label.
+
+```bash
+kubectl get pods --all-namespaces -l app=ingress-nginx
+```
+
+## Ingress Configuration
+
+Since `apiVersion: networking.k8s.io/v1beta1`is deprecated we use `apiVersion: networking.k8s.io/v1`. Take a look at Kubernetes Documentation for more information on [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/).
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /api/?(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: go-kubernetes-api
+            port:
+              number: 80
+```
+
+Verify that the configuration is correct and open `http://localhost:80/api/ping`in the browser.
