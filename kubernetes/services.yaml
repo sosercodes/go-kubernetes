@@ -10,3 +10,16 @@ spec:
   selector:
     app: go-kubernetes-api
   type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-kubernetes-frontend
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  selector:
+    app: go-kubernetes-frontend
+  type: ClusterIP

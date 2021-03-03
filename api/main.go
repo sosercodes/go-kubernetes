@@ -20,5 +20,5 @@ func getMessage(context *gin.Context) {
 func main() {
 	router := gin.Default()
 	router.GET("/message", getMessage)
-	router.Run(":81")
+	router.Run(":80")
 }

@@ -19,3 +19,25 @@ spec:
         image: somnidev/go-kubernetes-api:0.1
         ports:
         - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-kubernetes-frontend
+  labels:
+    app: go-kubernetes-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-kubernetes-frontend
+  template:
+    metadata:
+      labels:
+        app: go-kubernetes-frontend
+    spec:
+      containers:
+      - name: go-kubernetes-frontend
+        image: somnidev/go-kubernetes-frontend:0.1
+        ports:
+        - containerPort: 80
