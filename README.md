@@ -138,6 +138,12 @@ COPY --from=builder /build/golang-app .
 ENTRYPOINT [ "./golang-app" ]
 ```
 
+Now we can build our _multi stage_ docker image.
+
+```bash
+docker build -t somnidev/go-kubernetes-api:latest -t somnidev/go-kubernetes-api:0.1 -f Dockerfile .
+```
+
 Let's check the size of the image.
 
 ```bash
@@ -231,7 +237,7 @@ spec:
   type: NodePort
 ```
 
-We need a _type: NodePort_ to expose our Service to the outside of the cluster. Notice that the NodePort has to be greater than `30000`.
+We need a _type: NodePort_ to expose our Service to the outside of the cluster. Notice that the NodePort has to be greater than `30000`. Notice we can remove the `NodePort` after we have tested the configuration and replace it with `type: ClusterIP`.
 
 ## Creating an Ingress
 
@@ -263,7 +269,7 @@ Since `apiVersion: networking.k8s.io/v1beta1`is deprecated we use `apiVersion: n
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ingress-ingress
+  name: nginx-ingress
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/use-regex: 'true'
@@ -282,3 +288,8 @@ spec:
 ```
 
 Verify that the configuration is correct and open `http://localhost:80/api/ping`in the browser.
+
+## Securing the Ingress
+
+In order to secure our Ingress Service we have to follow the steps shown in the Kubernetes Documentation [Connecting Applications with Services - Securing the Service](https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/#securing-the-service).
+
