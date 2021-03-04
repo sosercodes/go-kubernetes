@@ -1,10 +1,22 @@
 package main
 
 import (
+	"log"
+	"net"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
+
+func getIpAddress() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+	ipAddress := conn.LocalAddr().(*net.UDPAddr)
+	return ipAddress.IP.String()
+}
 
 func getMessage(context *gin.Context) {
 	// Add CORS headers
@@ -13,7 +25,7 @@ func getMessage(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{
 		"title": "Hello from Go!",
-		"body":  "Welcome to Kubernetes.",
+		"body":  "Welcome to Kubernetes pod@'" + getIpAddress() + "'.",
 	})
 }
 

@@ -5,7 +5,7 @@ metadata:
   labels:
     app: go-kubernetes-api
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: go-kubernetes-api

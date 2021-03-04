@@ -1,4 +1,6 @@
-# Go React Kubernetes Tutorial
+# Go, Gin, JavaScript, Ingress and Kubernetes Tutorial
+
+## Create the Go App
 
 Let's create a new directory `api` and change into it.
 
@@ -95,9 +97,7 @@ go build
 
 ## Build a Docker Image
 
-### Single stage docker build
-
-We can build a single-stage docker image using the `golang:alpine` image. Here’s the Dockerfile.
+We can build a _Single-Stage Docker Image_ using the `golang:alpine` image. Here’s the Dockerfile.
 
 ```bash
 FROM golang:alpine
@@ -115,13 +115,11 @@ docker build -t somnidev/go-kubernetes-api:latest -t somnidev/go-kubernetes-api:
 
 When we check the size using `docker images` we get about **408** MB, just for our single little Go binary. That's pretty big.
 
-### Multi stage docker build
-
-With multi-stage builds, you use multiple FROM statements in your Dockerfile. Each FROM instruction can use a different base, and each of them begins a new stage of the build. You can selectively copy artifacts from one stage to another, leaving behind everything you don’t want in the final image - see [Use multi-stage builds](https://docs.docker.com/develop/develop-images/multistage-build/).
+With _Multi-Stage Docker Image_ build, you use multiple FROM statements in your Dockerfile. Each FROM instruction can use a different base, and each of them begins a new stage of the build. You can selectively copy artifacts from one stage to another, leaving behind everything you don’t want in the final image - see [Use multi-stage builds](https://docs.docker.com/develop/develop-images/multistage-build/).
 
 By default, the stages are not named, and you refer to them by their integer number, starting with 0 for the first FROM instruction. However, you can name your stages, by adding an `AS <NAME>` to the FROM instruction.
 
-Now let’s try a multi-stage build using this new Dockerfile.
+Now let’s create a _Multi-Stage Docker Image_ using this new Dockerfile.
 
 ```bash
 # build the app - builder image
@@ -138,7 +136,7 @@ COPY --from=builder /build/golang-app .
 ENTRYPOINT [ "./golang-app" ]
 ```
 
-Now we can build our _multi stage_ docker image.
+Now we can build our _Multi-Stage Docker Image_.
 
 ```bash
 docker build -t somnidev/go-kubernetes-api:latest -t somnidev/go-kubernetes-api:0.1 -f Dockerfile .
@@ -157,30 +155,133 @@ Now we get an image that is really small. Only **15MB**. Let's run it.
 docker run --rm -p 8080:8080 somnidev/go-kubernetes-api
 ```
 
+## Create the Client using JavaScript / ES7
+
+Let's create a new directory `frontend` and an `index.html` file.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=<device-width>, initial-scale=1.0">
+    <title>Hello Go Kubernetes!</title>
+    <link rel="stylesheet" href="styles/styles.css">
+</head>
+<body>
+    <div class="page-content">
+        <h1 id='title'>Hello!</h1>
+        <p id='body'>Hope you are fine!</p>
+    </div>
+    <script src="scripts/index.js"></script>
+</body>
+</html>
+```
+
+Additionally we need a stylesheet `styles/styles.css` for our  css styles.
+
+```css
+body {
+    background: #43cea2;
+    background: -webkit-linear-gradient(to right, #185a9d, #43cea2);
+    background: linear-gradient(to right, #185a9d, #43cea2);
+    color: #fff;
+    text-align: center;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.page-content {
+    position: absolute;
+    text-align: center;
+    left: 0;
+    right: 0;
+    top: 35%;
+    bottom: 0;
+}
+
+h1 {
+    font-size: 46px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+h2 {
+    font-size: 34px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+```
+
+In order to access the backend api we need some javascript in `scripts/index.js`.
+
+```javascript
+const getMessage = async (wordCount) => {
+    const response = await fetch(`http://localhost:80/api/message`, {
+        method: 'GET',
+        mode: 'cors', // cors, no-cors, *cors, same-origin);
+    });
+    if (response.status === 200) {
+        const data = await response.json();
+        return data;
+    } else {
+        throw new Error('Unable to get message')
+    }
+}
+getMessage().then((data) => {
+    document.querySelector('#title').innerHTML = data.title;
+    document.querySelector('#body').innerHTML = data.body;
+}).catch((err) => {
+    console.log(`Error: ${err}`);
+})
+```
+
 ## Creating a Deployment for Pods
 
-For our first deployment we create a file called `pods.yaml`for our Go app. It creates a Replicaset that brings up one pod.
+For our deployment we create a file called `pods.yaml`. It creates the Replicasets that brings up the pods.
 
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: go-kubernetes
+  name: go-kubernetes-api
   labels:
-    app: go-kubernetes
+    app: go-kubernetes-api
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: go-kubernetes
+      app: go-kubernetes-api
   template:
     metadata:
       labels:
-        app: go-kubernetes
+        app: go-kubernetes-api
     spec:
       containers:
-      - name: go-kubernetes
+      - name: go-kubernetes-api
         image: somnidev/go-kubernetes-api:0.1
+        ports:
+        - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-kubernetes-frontend
+  labels:
+    app: go-kubernetes-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-kubernetes-frontend
+  template:
+    metadata:
+      labels:
+        app: go-kubernetes-frontend
+    spec:
+      containers:
+      - name: go-kubernetes-frontend
+        image: somnidev/go-kubernetes-frontend:0.1
         ports:
         - containerPort: 80
 ```
@@ -199,19 +300,19 @@ Since our pod defined in the _template_ has the _label_ `app: go-kubernetes` we 
 kubectl get pods -l app=go-kubernetes -o wide
 ```
 
-Get a shell into the running container.
+To access a pod and take a look inside, we can get a shell into the running container.
 
 ```bash
-kubectl exec --stdin --tty shell-demo -- /bin/bash
+kubectl exec --stdin --tty POD_NAME_HERE -- /bin/bash
 ```
 
 Now we can delete the deployment with the following command.
 
 ```bash
-kubectl delete -f pod.yaml
+kubectl delete -f pods.yaml
 ```
 
-## Creating a Service
+## Create the Services
 
 Since you can't connect to Pods there is a concept called a _Kubernetes Service_. A _Kubernetes Service_ is an abstraction which defines a logical set of Pods running, whereby each Pod provides the same functionality.
 
@@ -219,13 +320,13 @@ When created, each Service is assigned its own unique IP address, also called _c
 
 Pods can be configured to talk to the Service, and know that communication to the Service will be automatically load-balanced out to some pod that is a member of the Service.
 
-We create a new file `services.yaml` for our service definitions.
+We create a new file `services.yaml` for our service definitions to check if our backend service works as expected.
 
 ```yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: go-kubernetes
+  name: go-kubernetes-api
 spec:
   ports:
   - name: http
@@ -233,15 +334,47 @@ spec:
     targetPort: 80
     nodePort: 30080
   selector:
-    app: go-kubernetes
+    app: go-kubernetes-api
   type: NodePort
 ```
 
-We need a _type: NodePort_ to expose our Service to the outside of the cluster. Notice that the NodePort has to be greater than `30000`. Notice we can remove the `NodePort` after we have tested the configuration and replace it with `type: ClusterIP`.
+To access a service we need a _type: NodePort_ to expose our Service to the outside of the cluster. Notice that the NodePort has to be greater than `30000`. Notice we can remove the `NodePort` after we have tested the configuration and replace it with `type: ClusterIP`. In order to access the service we use `http://localhost:30080/message`.
 
-## Creating an Ingress
+Now we can replace our `services.yaml` with the following code.
 
-Assuming you have Docker for Mac installed, follow the next steps to set up the Nginx Ingress Controller on your local Kubernetes cluster - and take a look at the [Installation Guide](https://kubernetes.github.io/ingress-nginx/deploy/#docker-for-mac) for the actual link.
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-kubernetes-api
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  selector:
+    app: go-kubernetes-api
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-kubernetes-frontend
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  selector:
+    app: go-kubernetes-frontend
+  type: ClusterIP
+```
+
+In Order to access our services we need an Ingress.
+
+## Creating an Ingress for the K8s cluster
+
+Assuming you have Docker for Mac installed, follow the next steps to set up the _Nginx Ingress Controller_ on your local Kubernetes cluster - and take a look at the [Installation Guide](https://kubernetes.github.io/ingress-nginx/deploy/#docker-for-mac) for the actual link.
 
 Run the following command to set up the NGINX Ingress.
 
@@ -261,9 +394,7 @@ Or use the label.
 kubectl get pods --all-namespaces -l app=ingress-nginx
 ```
 
-## Ingress Configuration
-
-Since `apiVersion: networking.k8s.io/v1beta1`is deprecated we use `apiVersion: networking.k8s.io/v1`. Take a look at Kubernetes Documentation for more information on [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/).
+Since `apiVersion: networking.k8s.io/v1beta1`is deprecated we use `apiVersion: networking.k8s.io/v1`. Take a look at Kubernetes Documentation for more information on [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/). Now, let's create the _ingress configuration_ `ingress.yaml`.
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -287,7 +418,97 @@ spec:
               number: 80
 ```
 
-Verify that the configuration is correct and open `http://localhost:80/api/ping`in the browser.
+In order to verify that the configuration is correct, open your browser and go to `http://localhost:80/api/message` to check the endpoint is working fine and then we open `http://localhost:80`.
+
+## Scaling up to more pods
+
+Before we scale up to more than one pod we add some more stuff to our pod and show the pods actual ip address.
+
+```go
+package main
+
+import (
+  "log"
+  "net"
+  "net/http"
+
+  "github.com/gin-gonic/gin"
+)
+
+func getIpAddress() string {
+  conn, err := net.Dial("udp", "8.8.8.8:80")
+  if err != nil {
+    log.Fatal(err)
+  }
+  defer conn.Close()
+  ipAddress := conn.LocalAddr().(*net.UDPAddr)
+  return ipAddress.IP.String()
+}
+
+func getMessage(context *gin.Context) {
+  context.JSON(http.StatusOK, gin.H{
+    "title": "Hello from Go!",
+    "body":  "Welcome to Kubernetes pod@'" + getIpAddress() + "'.",
+  })
+}
+
+func main() {
+  router := gin.Default()
+  router.GET("/message", getMessage)
+  router.Run(":80")
+}
+```
+
+In order to scale up to three backend pods we have to change our deployment.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-kubernetes-api
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  selector:
+    app: go-kubernetes-api
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-kubernetes-frontend
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  selector:
+    app: go-kubernetes-frontend
+  type: ClusterIP
+```
+
+Just apply that configuration.
+
+```bash
+kubectl apply -f pods.yaml
+```
+
+We can get the ip address for our pods.
+
+```bash
+% kubectl get po -o wide
+NAME                                      READY   STATUS    RESTARTS   AGE     IP          NODE             NOMINATED NODE   READINESS GATES
+go-kubernetes-api-5d9f9b85d6-6z84k        1/1     Running   0          2m12s   10.1.0.60   docker-desktop   <none>           <none>
+go-kubernetes-api-5d9f9b85d6-lsdf8        1/1     Running   0          2m12s   10.1.0.61   docker-desktop   <none>           <none>
+go-kubernetes-api-5d9f9b85d6-w5fz8        1/1     Running   0          12m     10.1.0.58   docker-desktop   <none>           <none>
+go-kubernetes-frontend-6cf7d6ff68-7j7rq   1/1     Running   0          12m     10.1.0.59   docker-desktop   <none>           <none>
+```
+
+Refreshing the browser shows the ip address.
+
+![Go Kubernetes@10.1.0.61!](go-kubernetes.png "Go Kubernetes@10.1.0.61!")
 
 ## Securing the Ingress
 
