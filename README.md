@@ -67,12 +67,12 @@ import (
 
 func main() {
     r := gin.Default()
-    r.GET("/ping", func(c *gin.Context) {
+    r.GET("/message", func(c *gin.Context) {
         c.JSON(200, gin.H{
-            "message": "pong",
+            "title": "Hello from Go!",
+            "message": "Welcome to Kubernetes.",
         })
     })
-    // Listen and Server to 0.0.0.0:8080
     r.Run(":8080")
 }
 ```
@@ -514,3 +514,6 @@ Refreshing the browser shows the ip address.
 
 In order to secure our Ingress Service we have to follow the steps shown in the Kubernetes Documentation [Connecting Applications with Services - Securing the Service](https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/#securing-the-service).
 
+## Thanks to
+
+- [Favicon Generator](https://favicon.io) used for the `favicon.png`
