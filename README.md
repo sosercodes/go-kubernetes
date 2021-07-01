@@ -1,8 +1,10 @@
 # Go, Gin, JavaScript, Ingress and Kubernetes Tutorial
 
+Microservices and Kubernetes are getting more popular right now. In order to get started with a backend written in Go and a frontend using vanilla JavaScript, we first need install _Docker Desktop for Mac_ and activate Kubernetes in the preferences.
+
 ## Create the Go App
 
-Let's create a new directory `api` and change into it.
+Let's create a new directory `api` for our backend and change into it.
 
 ```bash
 go mod init github.com/somnidev/go-kubernetes
@@ -95,7 +97,7 @@ We can also build an executable file.
 go build
 ```
 
-## Build a Docker Image
+### Build the Backend Docker Image
 
 We can build a _Single-Stage Docker Image_ using the `golang:alpine` image. Here’s the Dockerfile.
 
@@ -234,6 +236,38 @@ getMessage().then((data) => {
 }).catch((err) => {
     console.log(`Error: ${err}`);
 })
+```
+
+### Build the Frontend Docker Image
+
+Now we can create a `Dockerfile` for our Frontend.
+
+```bash
+FROM nginx:stable-alpine
+RUN rm /usr/share/nginx/html/*.*
+COPY index.html /usr/share/nginx/html
+COPY . /usr/share/nginx/html/
+RUN ls -R /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+Which we can use now to build our Docker Image.
+
+```bash
+cd frontend
+docker build -t somnidev/go-kubernetes-frondend:latest -t somnidev/go-kubernetes-frontendi:0.1 -f Dockerfile .
+```
+
+Now there should be two images.
+
+```bash
+% docker image ls
+REPOSITORY                           TAG                                                     IMAGE ID       CREATED          SIZE
+somnidev/go-kubernetes-frontend      0.1                                                     14e316733531   6 seconds ago    21.9MB
+somnidev/go-kubernetes-frontend      latest                                                  14e316733531   6 seconds ago    21.9MB
+somnidev/go-kubernetes-api           0.1                                                     f5b0b330461b   39 minutes ago   15MB
+somnidev/go-kubernetes-api           latest                                                  f5b0b330461b   39 minutes ago   15MB
 ```
 
 ## Creating a Deployment for Pods
@@ -469,31 +503,49 @@ func main() {
 In order to scale up to three backend pods we have to change our deployment.
 
 ```yaml
-apiVersion: v1
-kind: Service
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: go-kubernetes-api
-spec:
-  ports:
-  - name: http
-    port: 80
-    targetPort: 80
-  selector:
+  labels:
     app: go-kubernetes-api
-  type: ClusterIP
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: go-kubernetes-api
+  template:
+    metadata:
+      labels:
+        app: go-kubernetes-api
+    spec:
+      containers:
+      - name: go-kubernetes-api
+        image: somnidev/go-kubernetes-api:0.1
+        ports:
+        - containerPort: 80
 ---
-apiVersion: v1
-kind: Service
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: go-kubernetes-frontend
-spec:
-  ports:
-  - name: http
-    port: 80
-    targetPort: 80
-  selector:
+  labels:
     app: go-kubernetes-frontend
-  type: ClusterIP
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-kubernetes-frontend
+  template:
+    metadata:
+      labels:
+        app: go-kubernetes-frontend
+    spec:
+      containers:
+      - name: go-kubernetes-frontend
+        image: somnidev/go-kubernetes-frontend:0.1
+        ports:
+        - containerPort: 80
 ```
 
 Just apply that configuration.
@@ -520,6 +572,35 @@ Refreshing the browser shows the ip address.
 ## Securing the Ingress
 
 In order to secure our Ingress Service we have to follow the steps shown in the Kubernetes Documentation [Connecting Applications with Services - Securing the Service](https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/#securing-the-service).
+
+## Quick start
+
+Build the Backend Docker Image.
+
+```bash
+cd api
+docker build -t somnidev/go-kubernetes-api:latest -t somnidev/go-kubernetes-api:0.1 -f Dockerfile .
+```
+
+Build the Frontend Docker Image.
+
+```bash
+cd frontend
+docker build -t somnidev/go-kubernetes-frondend:latest -t somnidev/go-kubernetes-frontendi:0.1 -f Dockerfile .
+```
+
+Install NGINX if you didn`t do that until now.
+
+```bash
+kubectl apply -f ingress-deploy.yaml
+```
+
+Wait some seconds until the ingress is up and running. Then we can configure it, start the pods and the serv.
+
+```bash
+kubectl apply -f ingress.yaml
+kubectl apply -f pods.yaml services.yaml
+```
 
 ## Thanks to
 
