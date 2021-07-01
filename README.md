@@ -338,7 +338,7 @@ spec:
   type: NodePort
 ```
 
-To access a service we need a _type: NodePort_ to expose our Service to the outside of the cluster. Notice that the NodePort has to be greater than `30000`. Notice we can remove the `NodePort` after we have tested the configuration and replace it with `type: ClusterIP`. In order to access the service we use `http://localhost:30080/message`.
+To access a service we need a _type: NodePort_ to expose our Service to the outside of the cluster. Notice that the NodePort has to be greater than `30080`. Notice we can remove the `NodePort` after we have tested the configuration and replace it with `type: ClusterIP`. In order to access the service we use `http://localhost:30080/message`.
 
 Now we can replace our `services.yaml` with the following code.
 
@@ -416,6 +416,13 @@ spec:
             name: go-kubernetes-api
             port:
               number: 80
+      - path: /?(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: go-kubernetes-frontend
+            port:
+              number: 80              
 ```
 
 In order to verify that the configuration is correct, open your browser and go to `http://localhost:80/api/message` to check the endpoint is working fine and then we open `http://localhost:80`.
