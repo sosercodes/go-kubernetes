@@ -605,3 +605,5 @@ kubectl apply -f pods.yaml services.yaml
 ## Thanks to
 
 - [Favicon Generator](https://favicon.io) used for the `favicon.png`
+- [Uxío García Andrade - Deploy a Full-Stack Go and React App on Kubernetes](https://betterprogramming.pub/deploy-a-full-stack-go-and-react-app-on-kubernetes-4f31cdd9a48b)
+- [Golang, Gin & MongoDB – Building microservices easily](https://blog.codecentric.de/en/2020/04/golang-gin-mongodb-building-microservices-easily/)
