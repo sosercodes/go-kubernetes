@@ -256,7 +256,7 @@ Which we can use now to build our Docker Image.
 
 ```bash
 cd frontend
-docker build -t somnidev/go-kubernetes-frondend:latest -t somnidev/go-kubernetes-frontendi:0.1 -f Dockerfile .
+docker build -t somnidev/go-kubernetes-frondend:latest -t somnidev/go-kubernetes-frontend:0.1 -f Dockerfile .
 ```
 
 Now there should be two images.
@@ -413,7 +413,7 @@ Assuming you have Docker for Mac installed, follow the next steps to set up the 
 Run the following command to set up the NGINX Ingress.
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.44.0/deploy/static/provider/cloud/deploy.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.6.4/deploy/static/provider/cloud/deploy.yaml
 ```
 
 Verify the service was enabled by running the following:
@@ -582,10 +582,15 @@ cd api
 docker build -t somnidev/go-kubernetes-api:latest -t somnidev/go-kubernetes-api:0.1 -f Dockerfile .
 ```
 
-Build the Frontend Docker Image.
+Change directory to frontend.
 
 ```bash
 cd frontend
+```
+
+Build the Frontend Docker Image.
+
+```bash
 docker build -t somnidev/go-kubernetes-frondend:latest -t somnidev/go-kubernetes-frontendi:0.1 -f Dockerfile .
 ```
 
