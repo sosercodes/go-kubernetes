@@ -1,6 +1,6 @@
 // app.js
 
-const getMessage = async (wordCount) => {
+const getMessage = async () => {
     const response = await fetch(`http://localhost:80/api/message`, {
         method: 'GET',
         mode: 'cors', // cors, no-cors, *cors, same-origin);

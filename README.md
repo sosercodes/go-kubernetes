@@ -218,7 +218,7 @@ h2 {
 In order to access the backend api we need some javascript in `scripts/index.js`.
 
 ```javascript
-const getMessage = async (wordCount) => {
+const getMessage = async () => {
     const response = await fetch(`http://localhost:80/api/message`, {
         method: 'GET',
         mode: 'cors', // cors, no-cors, *cors, same-origin);
@@ -256,7 +256,12 @@ Which we can use now to build our Docker Image.
 
 ```bash
 cd frontend
-docker build -t somnidev/go-kubernetes-frondend:latest -t somnidev/go-kubernetes-frontend:0.1 -f Dockerfile .
+```
+
+Now build the image.
+
+```bash
+docker build -t somnidev/go-kubernetes-frontend:latest -t somnidev/go-kubernetes-frontend:0.1 -f Dockerfile .
 ```
 
 Now there should be two images.
@@ -573,25 +578,48 @@ Refreshing the browser shows the ip address.
 
 In order to secure our Ingress Service we have to follow the steps shown in the Kubernetes Documentation [Connecting Applications with Services - Securing the Service](https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/#securing-the-service).
 
+## How to upgrade all dependencies at once
+
+In order to upgrade all dependencies at once, run the following command from the root directory of your module.
+
+This upgrades to the latest or minor patch release
+
+```bash
+go get -u ./...
+```
+
+For more information see [How To Upgrade Golang Dependencies](https://golang.cafe/blog/how-to-upgrade-golang-dependencies.html).
+
 ## Quick start
+
+Change to the api directory.
+
+```bash
+cd api
+```
 
 Build the Backend Docker Image.
 
 ```bash
-cd api
 docker build -t somnidev/go-kubernetes-api:latest -t somnidev/go-kubernetes-api:0.1 -f Dockerfile .
 ```
 
 Change directory to frontend.
 
 ```bash
-cd frontend
+cd ../frontend
 ```
 
 Build the Frontend Docker Image.
 
 ```bash
-docker build -t somnidev/go-kubernetes-frondend:latest -t somnidev/go-kubernetes-frontendi:0.1 -f Dockerfile .
+docker build -t somnidev/go-kubernetes-frontend:latest -t somnidev/go-kubernetes-frontend:0.1 -f Dockerfile .
+```
+
+Now we change to the kubernetes directory.
+
+```bash
+cd ../kubernetes
 ```
 
 Install NGINX if you didn`t do that until now.
@@ -600,12 +628,26 @@ Install NGINX if you didn`t do that until now.
 kubectl apply -f ingress-deploy.yaml
 ```
 
+Check which namespaces are available.
+
+```bash
+kubectl get ns
+```
+
+Check if everything has started.
+
+```bash
+kubectl get all -n ingress-nginx
+```
+
 Wait some seconds until the ingress is up and running. Then we can configure it, start the pods and the serv.
 
 ```bash
 kubectl apply -f ingress.yaml
 kubectl apply -f pods.yaml services.yaml
 ```
+
+Open the browser and go to [http://localhost](http://localhost). If you refresh the page, you will see a different IP from another node.
 
 ## Thanks to
 
