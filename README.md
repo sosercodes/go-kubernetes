@@ -125,7 +125,7 @@ Now let’s create a _Multi-Stage Docker Image_ using this new Dockerfile.
 
 ```bash
 # build the app - builder image
-FROM golang:1.16.0-alpine3.13 AS builder
+FROM golang:1.23.6-alpine3.20 AS builder
 RUN mkdir /build
 ADD *.go *.mod *.sum /build/
 WORKDIR /build
@@ -133,7 +133,7 @@ RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o golang-app .
 
 # create clean app image
-FROM alpine:3.13
+FROM alpine:3.21
 COPY --from=builder /build/golang-app .
 ENTRYPOINT [ "./golang-app" ]
 ```
@@ -153,9 +153,29 @@ somnidev/go-kubernetes-api                       latest                         
 
 Now we get an image that is really small. Only **15MB**. Let's run it.
 
+In order to test if the image is working we can run it using docker.
+
 ```bash
-docker run --rm -p 8080:8080 somnidev/go-kubernetes-api
+> docker run --rm -p 8080:80 somnidev/go-kubernetes-api
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /message                  --> main.getMessage (3 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :80
 ```
+
+Now we can use `curl` in a separate terminal to access the endpoint.
+
+```bash
+> curl localhost:8080/message
+{"body":"Welcome to Kubernetes pod@'172.17.0.2'.","title":"Hello from Go!"}
+```
+
 
 ## Create the Client using JavaScript / ES7
 
@@ -418,7 +438,7 @@ Assuming you have Docker for Mac installed, follow the next steps to set up the 
 Run the following command to set up the NGINX Ingress.
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.6.4/deploy/static/provider/cloud/deploy.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.0/deploy/static/provider/cloud/deploy.yaml
 ```
 
 Verify the service was enabled by running the following:
